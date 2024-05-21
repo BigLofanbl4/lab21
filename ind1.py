@@ -14,38 +14,30 @@ from jsonschema import validate
 from jsonschema.exceptions import ValidationError
 
 
-def validation(instance):
-    schema = {
-        "type": "array",
-        "items": {
-            "type": "object",
-            "properties": {
-                "surname": {"type": "string"},
-                "name": {"type": "string"},
-                "zodiac": {"type": "string"},
-                "birthday": {
-                    "type": "array",
-                    "items": {"type": "string"},
-                    "minitems": 3,
-                },
+SCHEMA = {
+    "type": "array",
+    "items": {
+        "type": "object",
+        "properties": {
+            "surname": {"type": "string"},
+            "name": {"type": "string"},
+            "zodiac": {"type": "string"},
+            "birthday": {
+                "type": "array",
+                "items": {"type": "string"},
+                "minitems": 3,
             },
-            "required": ["surname", "name", "birthday"],
         },
-    }
-    try:
-        validate(instance, schema=schema)
-        return True
-    except ValidationError as err:
-        print(err.message)
-        return False
+        "required": ["surname", "name", "birthday"],
+    },
+}
 
 
 def load_people(file_name):
     with open(file_name, "r") as f:
         people = json.load(f)
-
-    if validation(people):
-        return people
+    validate(people, schema=SCHEMA)
+    return people
 
 
 def save_people(file_name, people_list):
@@ -191,7 +183,11 @@ def main(command_line=None):
 
     is_dirty = False
     if os.path.exists(data_file):
-        people = load_people(data_file)
+        try:
+            people = load_people(data_file)
+        except ValidationError as err:
+            print(f"{err}", file=sys.stderr)
+            people = []
     else:
         people = []
 
